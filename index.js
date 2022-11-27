@@ -35,7 +35,7 @@ async function run() {
 
 
         app.get("/user", async (req, res) => {
-            const query = { email: "ariana@gmail.com" };
+            const query = {};
             const result = await userCollection.find(query).toArray();
             if (result) res.send(true);
             else res.send(false);
