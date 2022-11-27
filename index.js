@@ -19,7 +19,7 @@ async function run() {
     try {
         const userCollection = client.db("resaleBooks").collection("userCollection");
         const products = client.db("resaleBooks").collection("products");
-        const catagories = client.db("resaleBooks").collection("catagories");
+        const categories = client.db("resaleBooks").collection("categories");
 
 
         app.post("/addProduct", async (req, res) => {
@@ -35,6 +35,9 @@ async function run() {
 
         app.post("/addUser", async (req, res) => {
             const user = req.body;
+            user.role === "seller" ? (user.isSeller = true) : (user.isSeller = false);
+            user.role === "admin" ? (user.isAdmin = true) : (user.isAdmin = false);
+            user.role === "buyer" ? (user.isBuyer = true) : (user.isBuyer = false);
             const query = { email: user.email };
             const data = await userCollection.find(query).toArray();
             if (data.length === 0) {
@@ -55,9 +58,9 @@ async function run() {
             else res.send(false);
         });
 
-        app.get("/catagories", async (req, res) => {
+        app.get("/categories", async (req, res) => {
             const query = {};
-            const result = await catagories.find(query).toArray();
+            const result = await categories.find(query).toArray();
             res.send(result);
         });
     }
