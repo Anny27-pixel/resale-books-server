@@ -27,6 +27,11 @@ async function run() {
             const result = await products.insertOne(product);
             res.send(result);
         });
+        app.get("/addProduct", async (req, res) => {
+            const query = {};
+            const result = await products.find(query).toArray();
+            res.send(result);
+        });
 
         app.post("/addUser", async (req, res) => {
             const user = req.body;
@@ -48,6 +53,12 @@ async function run() {
             const result = await userCollection.find(query).toArray();
             if (result) res.send(true);
             else res.send(false);
+        });
+
+        app.get("/catagories", async (req, res) => {
+            const query = {};
+            const result = await catagories.find(query).toArray();
+            res.send(result);
         });
     }
     finally {
