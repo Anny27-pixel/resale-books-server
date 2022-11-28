@@ -18,13 +18,20 @@ const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology:
 async function run() {
     try {
         const userCollection = client.db("resaleBooks").collection("userCollection");
-        const products = client.db("resaleBooks").collection("products");
         const categories = client.db("resaleBooks").collection("categories");
+        const products = client.db("resaleBooks").collection("products");
+        const orders = client.db("resaleBooks").collection("orders");
 
 
         app.post("/addProduct", async (req, res) => {
-            const product = req.body;
-            const result = await products.insertOne(product);
+            const order = req.body;
+            const result = await orders.insertOne(order);
+            res.send(result);
+        });
+
+        app.post("/makeOrder", async (req, res) => {
+            const order = req.body;
+            const result = await orders.insertOne(order);
             res.send(result);
         });
         app.get("/addProduct", async (req, res) => {
