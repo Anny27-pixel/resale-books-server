@@ -124,7 +124,7 @@ async function run() {
             res.send(result);
         });
 
-        app.get("/allBuyer", async (req, res) => {
+        app.get("/allBuyer", verifyJWT, verifyBuyer, async (req, res) => {
             const query = { role: "buyer" };
             const result = await userCollection.find(query).toArray();
             res.send(result);
