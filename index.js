@@ -16,21 +16,21 @@ const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster
 const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true, serverApi: ServerApiVersion.v1 });
 
 
-function verifyJWT(req, res, next) {
-    // console.log('token inside verifyJWT', req.headers.authorization);
-    const authHeader = req.headers.authorization;
-    if (!authHeader) {
-        return res.status(401).send('unauthorized access');
-    }
-    const token = authHeader.split(' ')[1];
-    jwt.verify(token, process.env.ACCESS_TOKEN, function (err, decoded) {
-        if (err) {
-            return res.status(403).send({ message: 'forbidden access' })
-        }
-        req.decoded = decoded;
-        next();
-    })
-}
+// function verifyJWT(req, res, next) {
+//     // console.log('token inside verifyJWT', req.headers.authorization);
+//     const authHeader = req.headers.authorization;
+//     if (!authHeader) {
+//         return res.status(401).send('unauthorized access');
+//     }
+//     const token = authHeader.split(' ')[1];
+//     jwt.verify(token, process.env.ACCESS_TOKEN, function (err, decoded) {
+//         if (err) {
+//             return res.status(403).send({ message: 'forbidden access' })
+//         }
+//         req.decoded = decoded;
+//         next();
+//     })
+// }
 
 async function run() {
     try {
@@ -40,28 +40,28 @@ async function run() {
         const orders = client.db("resaleBooks").collection("orders");
 
 
-        const verifyBuyer = async (req, res, next) => {
-            console.log('inside verifyBuyer', req.decoded.email);
-            const decodedEmail = req.decoded.email;
-            const query = { email: decodedEmail };
-            const user = await userCollection.findOne(query);
+        // const verifyBuyer = async (req, res, next) => {
+        //     console.log('inside verifyBuyer', req.decoded.email);
+        //     const decodedEmail = req.decoded.email;
+        //     const query = { email: decodedEmail };
+        //     const user = await userCollection.findOne(query);
 
-            if (user?.role !== 'buyer') {
-                return res.status(403).send({ message: 'forbidden access' })
-            }
-            next();
-        }
-        const verifySeller = async (req, res, next) => {
-            console.log('inside verifySeller', req.decoded.email);
-            const decodedEmail = req.decoded.email;
-            const query = { email: decodedEmail };
-            const user = await userCollection.findOne(query);
+        //     if (user?.role !== 'buyer') {
+        //         return res.status(403).send({ message: 'forbidden access' })
+        //     }
+        //     next();
+        // }
+        // const verifySeller = async (req, res, next) => {
+        //     console.log('inside verifySeller', req.decoded.email);
+        //     const decodedEmail = req.decoded.email;
+        //     const query = { email: decodedEmail };
+        //     const user = await userCollection.findOne(query);
 
-            if (user?.role !== 'seller') {
-                return res.status(403).send({ message: 'forbidden access' })
-            }
-            next();
-        }
+        //     if (user?.role !== 'seller') {
+        //         return res.status(403).send({ message: 'forbidden access' })
+        //     }
+        //     next();
+        // }
         app.get('/jwt', async (req, res) => {
             const email = req.query.email;
             const query = { email: email };
@@ -80,6 +80,13 @@ async function run() {
             const result = await orders.insertOne(order);
             res.send(result);
         });
+        app.post("/addProduct", async (req, res) => {
+            const product = req.body;
+            const result = await products.insertOne(product);
+            res.send(result);
+        });
+
+
 
         app.post("/makeOrder", async (req, res) => {
             const order = req.body;
@@ -104,7 +111,7 @@ async function run() {
             }
         });
 
-        app.get("/user/:email", verifyJWT, async (req, res) => {
+        app.get("/user/:email", async (req, res) => {
             const email = req.params.email;
             const query = { email: email };
             const result = await userCollection.find(query).toArray();
@@ -118,13 +125,13 @@ async function run() {
             res.send(result);
         });
 
-        app.get("/allSeller", verifyJWT, verifySeller, async (req, res) => {
+        app.get("/allSeller", async (req, res) => {
             const query = { role: "seller" };
             const result = await userCollection.find(query).toArray();
             res.send(result);
         });
 
-        app.get("/allBuyer", verifyJWT, verifyBuyer, async (req, res) => {
+        app.get("/allBuyer", async (req, res) => {
             const query = { role: "buyer" };
             const result = await userCollection.find(query).toArray();
             res.send(result);
