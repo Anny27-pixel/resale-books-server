@@ -34,11 +34,7 @@ async function run() {
             const result = await orders.insertOne(order);
             res.send(result);
         });
-        app.get("/addProduct", async (req, res) => {
-            const query = {};
-            const result = await products.find(query).toArray();
-            res.send(result);
-        });
+
 
         app.post("/addUser", async (req, res) => {
             const user = req.body;
@@ -53,7 +49,6 @@ async function run() {
                 console.log(result);
             } else {
                 res.send("User Already added");
-                console.log("User Already added");
             }
         });
 
@@ -65,16 +60,21 @@ async function run() {
         });
 
 
-        app.get("/user", async (req, res) => {
-            const query = {};
-            const result = await userCollection.find(query).toArray();
-            if (result) res.send(true);
-            else res.send(false);
-        });
-
         app.get("/categories", async (req, res) => {
             const query = {};
             const result = await categories.find(query).toArray();
+            res.send(result);
+        });
+
+        app.get("/all-seller", async (req, res) => {
+            const query = { role: "seller" };
+            const result = await userCollection.find(query).toArray();
+            res.send(result);
+        });
+
+        app.get("/all-buyer", async (req, res) => {
+            const query = { role: "buyer" };
+            const result = await userCollection.find(query).toArray();
             res.send(result);
         });
     }
