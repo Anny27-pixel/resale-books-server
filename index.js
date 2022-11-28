@@ -77,6 +77,16 @@ async function run() {
             const result = await userCollection.find(query).toArray();
             res.send(result);
         });
+
+        app.get("/categories/:cid", async (req, res) => {
+            const cid = req.params.cid;
+            const query1 = { category: cid };
+            const query2 = { id: parseInt(cid) };
+            console.log(cid);
+            const categoryInfo = await categories.findOne(query2);
+            const categoryProducts = await products.find(query1).toArray();
+            res.send({ categoryInfo, categoryProducts });
+        });
     }
     finally {
 
