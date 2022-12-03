@@ -15,23 +15,6 @@ app.use(express.json());
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.pzlo6ar.mongodb.net/?retryWrites=true&w=majority`;
 const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true, serverApi: ServerApiVersion.v1 });
 
-
-// function verifyJWT(req, res, next) {
-//     // console.log('token inside verifyJWT', req.headers.authorization);
-//     const authHeader = req.headers.authorization;
-//     if (!authHeader) {
-//         return res.status(401).send('unauthorized access');
-//     }
-//     const token = authHeader.split(' ')[1];
-//     jwt.verify(token, process.env.ACCESS_TOKEN, function (err, decoded) {
-//         if (err) {
-//             return res.status(403).send({ message: 'forbidden access' })
-//         }
-//         req.decoded = decoded;
-//         next();
-//     })
-// }
-
 async function run() {
     try {
         const userCollection = client.db("resaleBooks").collection("userCollection");
@@ -40,60 +23,16 @@ async function run() {
         const orders = client.db("resaleBooks").collection("orders");
 
 
-        // const verifyBuyer = async (req, res, next) => {
-        //     console.log('inside verifyBuyer', req.decoded.email);
-        //     const decodedEmail = req.decoded.email;
-        //     const query = { email: decodedEmail };
-        //     const user = await userCollection.findOne(query);
-
-        //     if (user?.role !== 'buyer') {
-        //         return res.status(403).send({ message: 'forbidden access' })
-        //     }
-        //     next();
-        // }
-        // const verifySeller = async (req, res, next) => {
-        //     console.log('inside verifySeller', req.decoded.email);
-        //     const decodedEmail = req.decoded.email;
-        //     const query = { email: decodedEmail };
-        //     const user = await userCollection.findOne(query);
-
-        //     if (user?.role !== 'seller') {
-        //         return res.status(403).send({ message: 'forbidden access' })
-        //     }
-        //     next();
-        // }
-        app.get('/jwt', async (req, res) => {
-            const email = req.query.email;
-            const query = { email: email };
-            const user = await userCollection.findOne(query);
-            if (user) {
-                const token = jwt.sign({ email }, process.env.ACCESS_TOKEN);
-                // const token = jwt.sign({ email }, process.env.ACCESS_TOKEN, { expiresIn: '1h' });
-                return res.send({ accessToken: token });
-            }
-            console.log(user);
-            res.status(403).send({ accessToken: '' });
-        });
-
-        app.post("/addProduct", async (req, res) => {
-            const order = req.body;
-            const result = await orders.insertOne(order);
-            res.send(result);
-        });
         app.post("/addProduct", async (req, res) => {
             const product = req.body;
             const result = await products.insertOne(product);
             res.send(result);
         });
-
-
-
         app.post("/makeOrder", async (req, res) => {
             const order = req.body;
             const result = await orders.insertOne(order);
             res.send(result);
         });
-
 
         app.post("/addUser", async (req, res) => {
             const user = req.body;
@@ -102,23 +41,41 @@ async function run() {
             user.role === "buyer" ? (user.isBuyer = true) : (user.isBuyer = false);
             const query = { email: user.email };
             const data = await userCollection.find(query).toArray();
+
             if (data.length === 0) {
                 const result = await userCollection.insertOne(user);
                 res.send(result);
                 console.log(result);
             } else {
                 res.send("User Already added");
+                console.log("User Already added");
             }
         });
 
-        app.get("/user/:email", async (req, res) => {
+        // get admin role
+        app.get("/users/admin/:email", async (req, res) => {
             const email = req.params.email;
-            const query = { email: email };
-            const result = await userCollection.find(query).toArray();
-            res.send(result[0]);
+            const query = { email };
+            const user = await userCollection.findOne(query);
+            res.send({ isAdmin: user?.role === "admin" });
         });
 
+        // get seller role
+        app.get("/users/seller/:email", async (req, res) => {
+            const email = req.params.email;
+            const query = { email };
+            const user = await userCollection.findOne(query);
+            res.send({ isSeller: user?.role === "seller" });
+        });
+        // get buyer role
+        app.get("/users/buyer/:email", async (req, res) => {
+            const email = req.params.email;
+            const query = { email };
+            const user = await userCollection.findOne(query);
+            res.send({ isBuyer: user?.role === "buyer" });
+        });
 
+        // loading Category
         app.get("/categories", async (req, res) => {
             const query = {};
             const result = await categories.find(query).toArray();
@@ -137,17 +94,20 @@ async function run() {
             res.send(result);
         });
 
+        app.get("/advertiseItems", async (req, res) => {
+            const query = { isAdv: true };
+            const result = await products.find(query).toArray();
+            res.send(result);
+        });
+
         app.get("/categories/:cid", async (req, res) => {
             const cid = req.params.cid;
-            const query1 = { category: cid };
-
+            const query1 = { category: cid, status: "none" };
             const query2 = { id: parseInt(cid) };
             console.log(cid);
-            const categoryInfo = await categories.findOne(query2);
+            const categoryInfo = await catagories.findOne(query2);
             const categoryProducts = await products.find(query1).toArray();
-            console.log(categoryInfo, categoryProducts);
             res.send({ categoryInfo, categoryProducts });
-
         });
 
         app.get("/sellerProducts/:email", async (req, res) => {
@@ -156,10 +116,51 @@ async function run() {
             const result = await products.find(query).toArray();
             res.send(result);
         });
+
+        app.delete("/product/:id", async (req, res) => {
+            const id = req.params.id;
+            const query = { _id: ObjectId(id) };
+            const result = await products.deleteOne(query);
+            res.send(result);
+        });
+
+        app.delete("/user/:email", async (req, res) => {
+            const email = req.params.email;
+            const query = { email: email };
+            const result = await userCollection.deleteOne(query);
+            res.send(result);
+        });
         app.get("/myBookings/:email", async (req, res) => {
             const email = req.params.email;
             const query = { BuyerEmail: email };
             const result = await orders.find(query).toArray();
+            res.send(result);
+        });
+
+        app.put("/product/MakeAd/:id", async (req, res) => {
+            const id = req.params.id;
+            const filter = { _id: ObjectId(id) };
+            const options = { upsert: true };
+            const updatedDoc = {
+                $set: {
+                    isAdv: true,
+                },
+            };
+            const result = await products.updateOne(filter, updatedDoc, options);
+            res.send(result);
+        });
+
+        app.put("/bookPurchase/:id", async (req, res) => {
+            const id = req.params.id;
+            const filter = { _id: ObjectId(id) };
+            const options = { upsert: true };
+            const updatedDoc = {
+                $set: {
+                    isAdv: false,
+                    status: "sold",
+                },
+            };
+            const result = await products.updateOne(filter, updatedDoc, options);
             res.send(result);
         });
     }
